@@ -195,6 +195,18 @@ class Curve:
 def signed_distance_point_to_plane_OCCT(point_to_find_distance : gp_Vec, normal : gp_Vec, point_in_plane : gp_Vec):
     return (point_to_find_distance - point_in_plane).Dot(normal)
 
+def find_start_end_of_curve(curve : Curve):
+    count = {}
+    # print(curve.lines)
+    for line in curve.lines:
+        count[line[0]] = count.get(line[0], 0) + 1
+        count[line[1]] = count.get(line[1], 0) + 1
+    start_end_points = []
+    for index_count in count:
+        if count[index_count] == 1:
+            start_end_points.append(index_count)
+    return start_end_points
+
 def trim_cylinder(curve : Curve, cylinder : Cylinder):
     P0 = convert_list_to_vec3_OCCT(cylinder.base)
     d = normalize_normal_with_OCCT(cylinder.direction)
@@ -208,6 +220,7 @@ def trim_cylinder(curve : Curve, cylinder : Cylinder):
             d = -d
         cylinder.height = abs(signed_distance)
         trimmed_cylinder = make_cylinder_OCCT(cylinder.radius, cylinder.height, cylinder.base, convert_vec3_OCCT_to_list(d))
+        # trimmed_cylinder = make_cylinder_OCCT(cylinder.radius, cylinder.height, convert_vec3_OCCT_to_list(P) , convert_vec3_OCCT_to_list(d))
         return trimmed_cylinder
     return None
 
@@ -220,26 +233,42 @@ def trim_plane(curve : Curve, plane : Plane):
     signed_distance_to_plane_q2 = signed_distance_point_to_plane_OCCT(Q2, N, P)
     print("\t", signed_distance_to_plane_q1, " | ", signed_distance_to_plane_q2)
     if (abs(signed_distance_to_plane_q1) < 1e-4 and abs(signed_distance_to_plane_q2) < 1e-4):
-        curve_length = 0.0
-        for line in curve.lines:
-            p1 = convert_list_to_vec3_OCCT(curve.points[line[0]])
-            p2 = convert_list_to_vec3_OCCT(curve.points[line[1]])
-            curve_length += (p2 - p1).Magnitude()
-        curve_center_of_mass = gp_Vec(0.0, 0.0, 0.0)
-        for point in curve.points:
-            curve_center_of_mass += convert_list_to_vec3_OCCT(point)
-        curve_center_of_mass /= len(curve_points)
-        # print(curve.points[0])
-        # print(curve.points[-1])
-        # print(curve_length)
-        # print(curve_center_of_mass)
-        A = Q1
-        B = curve_center_of_mass
-        C = Q2
-        print("\t", ((B - A).Crossed(B - C)).Magnitude())
-        are_vectors_collinear = ((B - A).Crossed(B - C)).Magnitude() < 1e-5
-        if are_vectors_collinear:
+
+        start_end_indices = find_start_end_of_curve(curve)
+        print("\t", start_end_indices)
+
+        # curve_length = 0.0
+        # for line in curve.lines:
+        #     p1 = convert_list_to_vec3_OCCT(curve.points[line[0]])
+        #     p2 = convert_list_to_vec3_OCCT(curve.points[line[1]])
+        #     curve_length += (p2 - p1).Magnitude()
+        # curve_center_of_mass = gp_Vec(0.0, 0.0, 0.0)
+        # for point in curve.points:
+        #     # print("\t", point)
+        #     curve_center_of_mass += convert_list_to_vec3_OCCT(point)
+        # curve_center_of_mass /= len(curve.points)
+        # # print(curve.points[0])
+        # # print(curve.points[-1])
+        # print("\t", curve_length)
+        # print("\t", len(curve.points))
+        # print("\t", make_vec_OCCT_to_string(curve_center_of_mass))
+        # A = Q1
+        # B = curve_center_of_mass
+        # C = Q2
+        # print("\t", ((B - A).Crossed(B - C)).Magnitude())
+        # are_vectors_collinear = ((B - A).Crossed(B - C)).Magnitude() < 1e-5
+        # if are_vectors_collinear:
+        #     return make_plane_with_normal_and_tangent_OCCT(plane.normal, convert_vec3_OCCT_to_list(curve_center_of_mass), convert_vec3_OCCT_to_list(Q2 - Q1), curve_length * 0.5)
+
+        if len(start_end_indices) == 2:
+            P1 = convert_list_to_vec3_OCCT(curve.points[start_end_indices[0]])
+            P2 = convert_list_to_vec3_OCCT(curve.points[start_end_indices[1]])
+            curve_length = (P1 - P2).Magnitude()
+            curve_center_of_mass = multiply_vec3_OCCT_with_scalar((P1 + P2), 0.5)
+            print("\t", curve_length)
+            print("\t", make_vec_OCCT_to_string(curve_center_of_mass))
             return make_plane_with_normal_and_tangent_OCCT(plane.normal, convert_vec3_OCCT_to_list(curve_center_of_mass), convert_vec3_OCCT_to_list(Q2 - Q1), curve_length * 0.5)
+
     return None
 
 def make_shape(primitive):
@@ -247,7 +276,11 @@ def make_shape(primitive):
     if primitive['type'] == "plane":
         return make_plane_with_distance_OCCT(params[0][0], params[1], 1.0)
     if primitive['type'] == "cylinder":
-        return make_cylinder_OCCT(params[2], 1.0, params[1], params[0])
+        positive_cylinder = make_cylinder_OCCT(params[2], 1.0, params[1], params[0])
+        negative_cylinder = make_cylinder_OCCT(params[2], 1.0, params[1], [-params[0][0], -params[0][1], -params[0][2]])
+        return BRepAlgoAPI_Fuse(positive_cylinder, negative_cylinder).Shape()
+        # return make_cylinder_OCCT(params[2], 1.0, params[1], [-params[0][0], -params[0][1], -params[0][2]])
+        # return make_cylinder_OCCT(params[2], 1.0, params[1], params[0])
     return None
 
 def trim(curve : Curve, primitive):
@@ -300,18 +333,20 @@ if __name__  == '__main__':
     # primitive_index = 2
     # for primitive_index in range(len(primitives)):
     # for primitive_index in [0, 4, 6, 9, 10]:
-    for primitive_index in [1, 2, 3, 5, 7, 8, 11, 12, 13, 14, 15]:
+    # for primitive_index in [1, 2, 3, 5, 7, 8, 11, 12, 13, 14, 15]:
+    for primitive_index in [9]:
     # print(primitive_index)
     # print(primitives[primitive_index])
-        curve_index = 2
+        # curve_index = 2
         trimmed_shapes = []
         for curve_index in range(len(edges['curves'])):
+        # for curve_index in [6, 18]:
             curve_points = edges['curves'][curve_index]['pv_points']
             curve_lines = edges['curves'][curve_index]['pv_lines']
-            # curve = make_curve_OCCT(curve_points, curve_lines)
-            # curve_color = get_color_OCCT(curve_index)
-            # for line in curve:
-            #     shapes.append(DisplayShape(line, curve_color))
+            curve = make_curve_OCCT(curve_points, curve_lines)
+            curve_color = get_color_OCCT(curve_index)
+            for line in curve:
+                shapes.append(DisplayShape(line, curve_color))
             curve = Curve()
             curve.points = curve_points
             curve.lines = curve_lines
@@ -321,27 +356,42 @@ if __name__  == '__main__':
                 trimmed_shapes.append(trimmed_primitive)
 
         # print(len(trimmed_shapes))
+        # n = 0
         for trimmed_shape in trimmed_shapes:
+            # shapes.append(DisplayShape(trimmed_shape, get_color_OCCT(n)))
             shapes.append(DisplayShape(trimmed_shape))
+            # n = n + 1
 
-        # boolean_shape = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[1]).Shape()
-        # boolean_shape = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[3]).Shape()
-        # boolean_shape = BRepAlgoAPI_Common(trimmed_shapes[3], trimmed_shapes[0]).Shape()
-        # boolean_shape = None
-        # for i in range(1, len(trimmed_shapes)):
-        #     # boolean_shape = BRepAlgoAPI_Cut(trimmed_shapes[i], trimmed_shapes[i - 1]).Shape()
-        #     # boolean_shape = BRepAlgoAPI_Fuse(boolean_shape, trimmed_shapes[i]).Shape()
-        #     boolean_shape = BRepAlgoAPI_Common(trimmed_shapes[i], trimmed_shapes[i - 1]).Shape()
+        # if len(trimmed_shapes) == 4:
+        #     # boolean_shape_1 = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[2]).Shape()
+        #     # boolean_shape_2 = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[3]).Shape()
+        #     # boolean_shape_3 = BRepAlgoAPI_Common(trimmed_shapes[1], trimmed_shapes[2]).Shape()
+        #     # boolean_shape_4 = BRepAlgoAPI_Common(trimmed_shapes[1], trimmed_shapes[3]).Shape()
 
-        # print(trimmed_shapes[0])
-        # print(trimmed_shapes[1])
-        # # boolean_shape = BRepAlgoAPI_Fuse(trimmed_shapes[0].shape, trimmed_shapes[1].shape).Shape()
-        # boolean_shape = BRepAlgoAPI_Common(trimmed_shapes[0].shape, trimmed_shapes[1].shape).Shape()
-        # boolean_shape = BRepAlgoAPI_Common(boolean_shape, trimmed_shapes[2].shape).Shape()
-        # boolean_shape = BRepAlgoAPI_Common(boolean_shape, trimmed_shapes[3].shape).Shape()
+        #     boolean_shape_1 = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[1]).Shape()
+        #     boolean_shape_2 = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[3]).Shape()
+        #     boolean_shape_3 = BRepAlgoAPI_Common(trimmed_shapes[2], trimmed_shapes[1]).Shape()
+        #     boolean_shape_4 = BRepAlgoAPI_Common(trimmed_shapes[2], trimmed_shapes[3]).Shape()
 
-        # shapes.append(DisplayShape(boolean_shape))
-        # shapes.append(DisplayShape(trimmed_shapes[0]))    
+        #     # boolean_shape_1 = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[2]).Shape()
+        #     # boolean_shape_2 = BRepAlgoAPI_Common(trimmed_shapes[0], trimmed_shapes[1]).Shape()
+        #     # boolean_shape_3 = BRepAlgoAPI_Common(trimmed_shapes[3], trimmed_shapes[2]).Shape()
+        #     # boolean_shape_4 = BRepAlgoAPI_Common(trimmed_shapes[3], trimmed_shapes[1]).Shape()
+
+        #     shapes.append(DisplayShape(boolean_shape_1))
+        #     shapes.append(DisplayShape(boolean_shape_2))
+        #     shapes.append(DisplayShape(boolean_shape_3))
+        #     shapes.append(DisplayShape(boolean_shape_4))
+
         # shapes.append(DisplayShape(make_shape(primitives[primitive_index])))
+
+    shapes.append(DisplayShape(make_shape(primitives[0])))
+    shapes.append(DisplayShape(make_shape(primitives[4])))
+    shapes.append(DisplayShape(make_shape(primitives[6])))
+    shapes.append(DisplayShape(make_shape(primitives[10])))
+
+    shapes.append(DisplayShape(make_shape(primitives[2])))
+    shapes.append(DisplayShape(make_shape(primitives[9])))
+    shapes.append(DisplayShape(make_shape(primitives[8])))
 
     display_scene_OCCT(shapes)
