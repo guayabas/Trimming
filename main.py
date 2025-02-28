@@ -341,6 +341,9 @@ if __name__  == '__main__':
         trimmed_shapes = []
         for curve_index in range(len(edges['curves'])):
         # for curve_index in [6, 18]:
+        # for curve_index in [6]:
+        # for curve_index in [15]:
+        # for curve_index in [20]:
             curve_points = edges['curves'][curve_index]['pv_points']
             curve_lines = edges['curves'][curve_index]['pv_lines']
             curve = make_curve_OCCT(curve_points, curve_lines)
@@ -385,13 +388,20 @@ if __name__  == '__main__':
 
         # shapes.append(DisplayShape(make_shape(primitives[primitive_index])))
 
-    shapes.append(DisplayShape(make_shape(primitives[0])))
+    # shapes.append(DisplayShape(make_shape(primitives[0])))
+    # shapes.append(DisplayShape(make_shape(primitives[4])))
+    # shapes.append(DisplayShape(make_shape(primitives[6])))
+    # shapes.append(DisplayShape(make_shape(primitives[10])))
+
+    # shapes.append(DisplayShape(make_shape(primitives[2])))
+    # shapes.append(DisplayShape(make_shape(primitives[9])))
+    # shapes.append(DisplayShape(make_shape(primitives[8])))
+
     shapes.append(DisplayShape(make_shape(primitives[4])))
     shapes.append(DisplayShape(make_shape(primitives[6])))
-    shapes.append(DisplayShape(make_shape(primitives[10])))
+    shapes.append(DisplayShape(make_shape(primitives[13])))
 
-    shapes.append(DisplayShape(make_shape(primitives[2])))
-    shapes.append(DisplayShape(make_shape(primitives[9])))
-    shapes.append(DisplayShape(make_shape(primitives[8])))
+    # shapes.append(DisplayShape(make_shape(primitives[14])))
+    # shapes.append(DisplayShape(make_shape(primitives[15])))
 
     display_scene_OCCT(shapes)
