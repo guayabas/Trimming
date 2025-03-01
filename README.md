@@ -146,9 +146,9 @@ First, what is `gp_Ax2`? It is no more an OCCT object that can constructed if a 
 Second, the radius is also provided directly from the file read, so nothing more than just passing it.
 
 The fun one is how to get the height. The information that we have is a point on the curve (which at this point we know is also in that specific cylinder primitive) $P$, a point in the axis $P0$, and the axis direction $d$. If you go back to section 2 you will notice that the height is no more than
-$$
-h = |\text{Adjacent Side Length}_{d(P-P_0)}| = |\hat{d}\cdot(P - P_0)|
-$$
+
+$h = |\text{Adjacent Side Length}_{d(P-P_0)}| = |\hat{d}\cdot(P - P_0)|$
+
 where $|\quad|$ is the absolute value operator.
 
 <details><summary>Show Trimmed Cylinder (Curve 0)</summary>
