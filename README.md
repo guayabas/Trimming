@@ -74,10 +74,10 @@ start_display()
 <details><summary>Show Content</summary>
 
 If one recalls geometry, for two vector $u$, $v$ one can have the equations
-$$
-\text{Adjacent Side Lengt}_{uv} = \hat{u}\cdot v \\
-\text{Opposite Side Length}_{uv} = ||\hat{u}\times v||
-$$
+
+$\text{Adjacent Side Lengt}_{uv} = \hat{u}\cdot v$
+
+$\text{Opposite Side Length}_{uv} = ||\hat{u}\times v||$
 
 where $\hat{u} = \frac{u}{||u||}$ (i.e. a normalized vector), and $||\quad||$ is the norm operator (which can be for example in $R^3$, $||u|| = \sqrt{u_x^2 + u_y^2 + u_z^2}$).
 
