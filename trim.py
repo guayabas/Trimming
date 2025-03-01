@@ -1,6 +1,7 @@
 # Alejandro Guayaquil 02.2025
 
 from OCC.Core.gp import gp_Ax2, gp_Pnt, gp_Dir, gp_Vec
+from OCC.Core.STEPControl import STEPControl_Writer, STEPControl_AsIs
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Fuse
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire
 from OCC.Core.BRepOffsetAPI import BRepOffsetAPI_ThruSections
@@ -185,11 +186,9 @@ def find_primitives_for_curve(curve : Curve, primitives : list):
     for primitive in primitives:
         primitive_found = False
         if isinstance(primitive, Plane):
-            # print("Checking plane", primitive.id)
             if check_curve_is_in_plane(curve, primitive):
                 primitive_found = True
         elif isinstance(primitive, Cylinder):
-            # print("Checking cylinder", primitive.id)
             if check_curve_is_in_cylinder(curve, primitive):
                 primitive_found = True
         if primitive_found:
@@ -460,7 +459,6 @@ def trim_object(edges, primitives):
     trimmed_cylinders = []
     for curve_index, curve in enumerate(edges['curves']):
         if (curve_index not in cube_indices):
-            curve = edges['curves'][curve_index]
             curve_as_object = Curve()
             curve_as_object.points = curve['pv_points']
             curve_as_object.lines = curve['pv_lines']
@@ -482,11 +480,12 @@ def trim_object(edges, primitives):
 # Utilities
 # ===================================================
 
-def display_scene_OCCT(display_shapes):
+def display_scene_OCCT(display_shapes, show_domain = False):
     from OCC.Display.SimpleGui import init_display
-    domain = make_domain_OCCT()
-    for edge in domain:
-        display_shapes.append(edge)
+    if show_domain:
+        domain = make_domain_OCCT()
+        for edge in domain:
+            display_shapes.append(edge)
     display, start_display, _, _ = init_display()
     for display_shape in display_shapes:
         if display_shape is not None:
@@ -498,18 +497,24 @@ def read_data(surfaces_file, curves_file):
     primitives = None
     edges = None
     if (os.path.exists(surfaces_file) and os.path.exists(curves_file)):
-        with open("topo.json") as file:
+        with open(curves_file) as file:
             edges = json.load(file)
-        with open("surface_info.json") as file:
+        with open(surfaces_file) as file:
             primitives = json.load(file)
     else:
         print("Error reading files", surfaces_file, curves_file)
         exit(-1)
     return edges, primitives
 
+def save_to_step(shape : TopoDS_Compound):
+    writer = STEPControl_Writer()
+    writer.Transfer(shape, STEPControl_AsIs)
+    writer.Write("trimmed.step")
+
 def save_to_stl(shape : TopoDS_Compound):
     mesh = BRepMesh_IncrementalMesh(shape, 0.001)
     mesh.Perform()
+    print("Saving file trimmed.stl")
     writer = StlAPI_Writer()
     writer.Write(shape, "trimmed.stl")
 
@@ -519,8 +524,9 @@ def save_to_stl(shape : TopoDS_Compound):
 
 if __name__ == '__main__':
     display_on_screen = True
-    edges, primitives = read_data("surface_info.json", "topo.json")
+    edges, primitives = read_data("input_data/surface_info.json", "input_data/topo.json")
     trimmed_object_from_primitives = trim_object(edges, primitives)
+    save_to_step(trimmed_object_from_primitives)
     save_to_stl(trimmed_object_from_primitives)
     if display_on_screen:
         display_shapes = []
