@@ -86,10 +86,10 @@ where $\hat{u} = \frac{u}{||u||}$ (i.e. a normalized vector), and $||\quad||$ is
 Thus, the problem to check if a curve is in a plane or in a cylinder transforms to
 
 > For a given point $P$ in the curve, does such point satisfies
-$$
-\text{Distance from } P \text{ to plane } = \text{Adjacent Side Length}_{NP} = D\quad D\in(0, \infty) \\
-\text{Radius from } P \text{ to cylinder axis } = \text{Opposite Side Length}_{d(P-P_0)} = r^2\quad r\in(0, \infty)
-$$
+
+$\text{Distance from } P \text{ to plane } = \text{Adjacent Side Length}_{NP} = D\quad D\in(0, \infty)$
+
+$\text{Radius from } P \text{ to cylinder axis } = \text{Opposite Side Length}_{d(P-P_0)} = r^2\quad r\in(0, \infty)$
 
 Where $N$ is the normal of the plane, and $(d, P_0)$ the axis and a point in the axis, respectively, of the cylinder.
 
@@ -161,19 +161,18 @@ where $|\quad|$ is the absolute value operator.
 What is `TopoDS_Wire`? This is no more than a collection of edges (ordered) that will form a boundary (in mesh world we call this wireframe). So how do we find which edges? Do not mistake with the edges from the input file `topo.json`, those are certainly part of a plane but here want to construct the plane that contains such line segment.
 
 What information we have? In this case we know is an open curve so we have the start and end of the line segment, let's call those $P_1$ and $P2$. We also have the normal $N$ of the plane that such line segment lives. So, how about if we get a quad with the following 4 points
-$$
-V_1 = o - \frac{w}{2}\hat{d_1} - \frac{h}{2}\hat{d_2} \\
-V_2 = o - \frac{w}{2}\hat{d_1} + \frac{h}{2}\hat{d_2} \\
-V_3 = o + \frac{w}{2}\hat{d_1} + \frac{h}{2}\hat{d_2} \\
-V_4 = o + \frac{w}{2}\hat{d_1} - \frac{h}{2}\hat{d_2}
-$$
+
+$V_1 = o - \frac{w}{2}\hat{d_1} - \frac{h}{2}\hat{d_2}$
+
+$V_2 = o - \frac{w}{2}\hat{d_1} + \frac{h}{2}\hat{d_2}$
+
+$V_3 = o + \frac{w}{2}\hat{d_1} + \frac{h}{2}\hat{d_2}$
+
+$V_4 = o + \frac{w}{2}\hat{d_1} - \frac{h}{2}\hat{d_2}$
+
 for the following values
-$$
-o = \frac{P_1 + P_2}{2} \\
-d_1 = P2 - P1 \\
-d_2 = d_1\times N \\
-w = h = ||d_1||
-$$
+
+$o = \frac{P_1 + P_2}{2}, d_1 = P2 - P1, d_2 = d_1\times N, w = h = ||d_1||$
 
 It is a little *verbose* such construction but one wins something with it, the plane will have the line segment as one of its axis so no matter the orientation of the normal plane. This is how the code of this looks in the solution
 ```Python
