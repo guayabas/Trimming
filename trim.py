@@ -13,6 +13,7 @@ from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopAbs import TopAbs_EDGE
 from OCC.Core.BRep import BRep_Builder
 from OCC.Core.GC import GC_MakeCircle
+import platform
 import json
 import sys
 import os
@@ -481,17 +482,34 @@ def trim_object(edges, primitives):
 # ===================================================
 
 def display_scene_OCCT(display_shapes, show_domain = False):
-    from OCC.Display.SimpleGui import init_display
     if show_domain:
         domain = make_domain_OCCT()
         for edge in domain:
             display_shapes.append(edge)
-    display, start_display, _, _ = init_display()
+    display = None
+    if platform.system() == "Windows":
+        from OCC.Display.SimpleGui import init_display
+        display, start_display, _, _ = init_display()
+    elif platform.system() == "Darwin":
+        from OCC.Display.backend import load_backend
+        load_backend("pyqt5")
+        from PyQt5.QtWidgets import QApplication
+        from OCC.Display.qtDisplay import qtViewer3d
+        app = QApplication(sys.argv)
+        window = qtViewer3d()
+        display = window._display
+    else:
+        print("OS not supported for visualization")
+        return
     for display_shape in display_shapes:
         if display_shape is not None:
             display.DisplayShape(display_shape, update=False, transparency=0.0)
     display.FitAll()
-    start_display()
+    if platform.system() == "Windows":
+        start_display()
+    elif platform.system() == "Darwin":
+        window.show()
+        sys.exit(app.exec_())
 
 def read_data(surfaces_file, curves_file):
     primitives = None

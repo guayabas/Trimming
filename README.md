@@ -4,7 +4,7 @@ This document shows the steps and decisions to solve the task of
 
 > Given a list of primitives and a list of curves, construct the BRep by trimming the primitives using the curves
 
-With the result from `python trim.py` (which also saves the files `trimmed.stl` and `trimmed.step`) looking as
+With the result from `python trim.py` (it also saves the files `trimmed.stl` and `trimmed.step` in case the visualization is broken) as
 
 ![](images/output.png)
 
@@ -17,6 +17,8 @@ With the result from `python trim.py` (which also saves the files `trimmed.stl` 
 > An *easy* way of getting pythonocc-core is via the conda Python distribution. There is even a non-heavy version named miniconda (only around 100MB of executable to download).
 
 > One could do straight OCCT from C/C++ but that requires some time for setting up and can be quirky/troublesome on Windows
+
+> Tested also on MacOS 15.3.1 but that one requires the extra installation of `conda install -c conda-forge pyqt` since the rendering backend of `SimpleGui` is not well supported on such OS. It is also worth noting that the default camera is quite trash so you need to zoom to see the objects if you are using this OS ... even after adding the line `display.FitAll()`
 
 ## 1. How are the inputs provided?
 <details><summary>Show Content</summary>
@@ -145,7 +147,7 @@ First, what is `gp_Ax2`? It is no more an OCCT object that can constructed if a 
 
 Second, the radius is also provided directly from the file read, so nothing more than just passing it.
 
-The fun one is how to get the height. The information that we have is a point on the curve (which at this point we know is also in that specific cylinder primitive) $P$, a point in the axis $P0$, and the axis direction $d$. If you go back to section 2 you will notice that the height is no more than
+The fun one is how to get the height. The information that we have is a point on the curve (which at this point we know is also in that specific cylinder primitive) $P$, a point in the axis $P_0$, and the axis direction $d$. If you go back to section 2 you will notice that the height is no more than
 
 $h = |\text{Adjacent Side Length}_{d(P-P_0)}| = |\hat{d}\cdot(P - P_0)|$
 
@@ -160,7 +162,7 @@ where $|\quad|$ is the absolute value operator.
 
 What is `TopoDS_Wire`? This is no more than a collection of edges (ordered) that will form a boundary (in mesh world we call this wireframe). So how do we find which edges? Do not mistake with the edges from the input file `topo.json`, those are certainly part of a plane but here want to construct the plane that contains such line segment.
 
-What information we have? In this case we know is an open curve so we have the start and end of the line segment, let's call those $P_1$ and $P2$. We also have the normal $N$ of the plane that such line segment lives. So, how about if we get a quad with the following 4 points
+What information we have? In this case we know is an open curve so we have the start and end of the line segment, let's call those $P_1$ and $P_2$. We also have the normal $N$ of the plane that such line segment lives. So, how about if we get a quad with the following 4 points
 
 $V_1 = o - \frac{w}{2}\hat{d_1} - \frac{h}{2}\hat{d_2}$
 
